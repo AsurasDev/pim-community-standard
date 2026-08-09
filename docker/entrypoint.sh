@@ -87,7 +87,11 @@ fi
 if [ "$install_markers" = "0" ]; then
     echo "Installing Akeneo database and search indexes..."
     su -s /bin/sh www-data -c \
-        "APP_ENV=prod php bin/console pim:install --force --doNotDropDatabase --symlink --clean --no-interaction --env=prod"
+        "APP_ENV=prod php bin/console pim:installer:check-requirements --no-interaction --env=prod"
+    su -s /bin/sh www-data -c \
+        "APP_ENV=prod php bin/console pim:installer:db --doNotDropDatabase --catalog vendor/akeneo/pim-community-dev/src/Akeneo/Platform/Bundle/InstallerBundle/Resources/fixtures/minimal --no-interaction --env=prod"
+    su -s /bin/sh www-data -c \
+        "APP_ENV=prod php bin/console pim:installer:assets --symlink --clean --no-interaction --env=prod"
 
     existing_admin="$(mysql \
         --host="$APP_DATABASE_HOST" \

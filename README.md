@@ -79,3 +79,16 @@ The Railway project needs three services:
 The application entrypoint waits for both dependencies and only runs the
 destructive Akeneo installer when its completed-install marker is absent.
 Subsequent deployments preserve the database and uploaded files.
+
+Akeneo 2026.3's generic `pim:install` command defaults to a fixture path that
+does not exist in the Standard distribution. The runtime therefore follows
+the production target from Akeneo's own `std-build/Makefile` and passes the
+packaged `minimal` catalog explicitly to `pim:installer:db`.
+
+Railway mounts volumes as root. Elasticsearch must run with
+`RAILWAY_RUN_UID=0` and a start command that fixes ownership before dropping
+privileges again:
+
+```bash
+bash -lc 'chown -R elasticsearch:root /usr/share/elasticsearch/data && exec runuser -u elasticsearch -- /usr/local/bin/docker-entrypoint.sh eswrapper'
+```
