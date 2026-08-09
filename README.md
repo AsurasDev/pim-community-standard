@@ -60,3 +60,22 @@ https://docs.akeneo.com/master/migrate_pim/index.html
 Changelog
 ---------
 You can check out the changelog files in https://github.com/akeneo/pim-community-dev.
+
+Railway deployment
+------------------
+
+This fork contains a production-oriented, single-container runtime for Railway.
+It builds the Akeneo 2026.3 backend and frontend, serves the application with
+Nginx and PHP-FPM, and runs the Symfony Messenger worker under Supervisor.
+
+The Railway project needs three services:
+
+* this repository as the `akeneo` service, with a persistent volume mounted at
+  `/srv/pim/var`;
+* MySQL `8.0.34`, with a volume mounted at `/var/lib/mysql`;
+* Elasticsearch `8.17.0`, with a volume mounted at
+  `/usr/share/elasticsearch/data` and `node.store.allow_mmap=false`.
+
+The application entrypoint waits for both dependencies and only runs the
+destructive Akeneo installer when its completed-install marker is absent.
+Subsequent deployments preserve the database and uploaded files.
