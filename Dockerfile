@@ -57,6 +57,7 @@ ENV APP_ENV=prod \
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends nginx supervisor \
+    && sed -i 's/^;clear_env = no$/clear_env = no/' /etc/php/8.3/fpm/pool.d/www.conf \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/nginx/sites-enabled/default

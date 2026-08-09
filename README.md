@@ -92,3 +92,7 @@ privileges again:
 ```bash
 bash -lc 'chown -R elasticsearch:root /usr/share/elasticsearch/data && exec runuser -u elasticsearch -- /usr/local/bin/docker-entrypoint.sh eswrapper'
 ```
+
+The runtime also disables PHP-FPM's `clear_env` setting. Without that change,
+CLI installation commands see Railway's variables but web requests fall back
+to the distribution's `.env` hosts (`mysql` and `elasticsearch`).
