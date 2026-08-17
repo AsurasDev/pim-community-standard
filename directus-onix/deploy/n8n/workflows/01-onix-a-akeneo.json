@@ -1,0 +1,111 @@
+{
+  "name": "01 · ONIX (Directus) → Akeneo",
+  "settings": { "executionOrder": "v1", "timezone": "America/Bogota" },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] }
+      },
+      "id": "b1000000-0000-4000-8000-000000000001",
+      "name": "Cada 15 minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-260, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Delta: solo lo modificado desde la última ejecución correcta.\n// La marca se guarda en los datos estáticos del workflow, así que sobrevive\n// a reinicios del contenedor.\nconst estado = $getWorkflowStaticData('global');\nconst desde = estado.ultimaSincronizacion ?? null;\n\n// Se solapan 5 minutos a propósito: es más barato reenviar un libro que\n// perderlo si dos escrituras caen en el mismo segundo.\nconst margen = 5 * 60 * 1000;\nconst since = desde ? new Date(new Date(desde).getTime() - margen).toISOString() : null;\n\nreturn [{ json: { since, esCargaCompleta: since === null } }];"
+      },
+      "id": "b1000000-0000-4000-8000-000000000002",
+      "name": "Calcular delta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-40, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ONIX_SYNC_URL }}/sync/products",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.ONIX_SYNC_SECRET }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ since: $json.since, withCovers: true }) }}",
+        "options": { "timeout": 300000, "response": { "response": { "neverError": true, "fullResponse": true } } }
+      },
+      "id": "b1000000-0000-4000-8000-000000000003",
+      "name": "Sincronizar a Akeneo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Solo se avanza la marca de tiempo si la sincronización fue limpia.\n// Si algo falló, la próxima ejecución vuelve a intentar el mismo rango.\nconst respuesta = $json.body ?? $json;\nconst informe = respuesta.report ?? {};\nconst fallos = (informe.products?.failed ?? 0) + (informe.associations?.failed ?? 0);\nconst estado = $getWorkflowStaticData('global');\n\nif ($json.statusCode === 200 && fallos === 0) {\n  estado.ultimaSincronizacion = new Date().toISOString();\n}\n\nreturn [{ json: {\n  ok: fallos === 0 && $json.statusCode === 200,\n  codigo: $json.statusCode,\n  libros: informe.books ?? 0,\n  productos: informe.products?.ok ?? 0,\n  asociaciones: informe.associations?.ok ?? 0,\n  cubiertas: informe.covers ?? 0,\n  fallos,\n  errores: (informe.products?.errors ?? []).slice(0, 5),\n  marcaGuardada: estado.ultimaSincronizacion ?? null\n} }];"
+      },
+      "id": "b1000000-0000-4000-8000-000000000004",
+      "name": "Evaluar y avanzar marca",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "conditions": [
+            {
+              "id": "cond-ok",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1000000-0000-4000-8000-000000000005",
+      "name": "¿Sin fallos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [620, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log('[onix→akeneo] OK', JSON.stringify($json));\nreturn $input.all();"
+      },
+      "id": "b1000000-0000-4000-8000-000000000006",
+      "name": "Registrar éxito",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, -100]
+    },
+    {
+      "parameters": {
+        "errorMessage": "=Sincronización ONIX → Akeneo con fallos: {{ JSON.stringify($json.errores) }}"
+      },
+      "id": "b1000000-0000-4000-8000-000000000007",
+      "name": "Detener con error",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [860, 100]
+    }
+  ],
+  "connections": {
+    "Cada 15 minutos": { "main": [[{ "node": "Calcular delta", "type": "main", "index": 0 }]] },
+    "Calcular delta": { "main": [[{ "node": "Sincronizar a Akeneo", "type": "main", "index": 0 }]] },
+    "Sincronizar a Akeneo": { "main": [[{ "node": "Evaluar y avanzar marca", "type": "main", "index": 0 }]] },
+    "Evaluar y avanzar marca": { "main": [[{ "node": "¿Sin fallos?", "type": "main", "index": 0 }]] },
+    "¿Sin fallos?": {
+      "main": [
+        [{ "node": "Registrar éxito", "type": "main", "index": 0 }],
+        [{ "node": "Detener con error", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

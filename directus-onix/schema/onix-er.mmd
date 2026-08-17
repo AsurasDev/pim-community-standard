@@ -1,0 +1,219 @@
+erDiagram
+    ORGANIZATIONS ||--o{ BOOK_ORGANIZATIONS : participates
+    ORGANIZATIONS ||--o{ BOOK_SUPPLIES : supplies
+    CONTRIBUTORS ||--o{ BOOK_CONTRIBUTORS : participates
+    BOOKS ||--o{ BOOK_CONTRIBUTORS : has
+    BOOKS ||--o{ BOOK_ORGANIZATIONS : has
+    BOOKS ||--o{ BOOK_VALUES : has
+    BOOKS ||--o{ BOOK_SUBJECTS : has
+    BOOKS ||--o{ TEXT_CONTENTS : has
+    BOOKS ||--o{ SUPPORTING_RESOURCES : has
+    BOOKS ||--o{ BOOK_IDENTIFIERS : has
+    BOOKS ||--o{ BOOK_SERIES : has
+    SERIES ||--o{ BOOK_SERIES : groups
+    BOOKS ||--o{ BOOK_WORKS : has
+    WORKS ||--o{ BOOK_WORKS : manifested_by
+    BOOKS ||--o{ RELATED_PRODUCTS : source
+    BOOKS o|--o{ RELATED_PRODUCTS : target
+    BOOKS ||--o{ BOOK_SUPPLIES : has
+    BOOK_SUPPLIES ||--o{ PRICES : has
+    PRICES ||--o{ PRICE_TERRITORIES : applies_to
+
+    ORGANIZATIONS {
+        uuid id PK
+        string name
+        string website
+        string email
+        string contact_name
+        string name_identifier_type
+        string name_identifier_scheme
+        string name_identifier
+    }
+
+    CONTRIBUTORS {
+        uuid id PK
+        string contributor_type
+        string display_name
+        string names_before_key
+        string key_names
+        string corporate_name
+        string name_identifier_type
+        string name_identifier_scheme
+        string name_identifier
+    }
+
+    BOOKS {
+        uuid id PK
+        string identity_key UK
+        string record_reference
+        string isbn13 UK
+        string gtin13
+        string title
+        string subtitle
+        string product_form
+        string product_form_description
+        string edition_type
+        string edition_number
+        string edition_statement
+        string publishing_status
+        integer page_count
+        boolean active
+    }
+
+    BOOK_CONTRIBUTORS {
+        uuid id PK
+        uuid book_id FK
+        uuid contributor_id FK
+        string role_code
+        integer sequence_number
+        boolean is_primary
+        text biography
+    }
+
+    BOOK_ORGANIZATIONS {
+        uuid id PK
+        uuid book_id FK
+        uuid organization_id FK
+        string publishing_role
+    }
+
+    BOOK_VALUES {
+        uuid id PK
+        uuid book_id FK
+        string value_group
+        string value_type
+        string value_code
+        string qualifier_code
+        string language_code
+        string script_code
+        string value_text
+        string value_label
+        text value_note
+        decimal value_number
+        string value_unit
+        date normalized_date
+        integer sequence_number
+        boolean included
+    }
+
+    BOOK_SUBJECTS {
+        uuid id PK
+        uuid book_id FK
+        string scheme_identifier
+        string scheme_name
+        string scheme_version
+        string subject_code
+        string heading_text
+        boolean is_main
+    }
+
+    TEXT_CONTENTS {
+        uuid id PK
+        uuid book_id FK
+        string text_type
+        string content_audience
+        string language_code
+        string text_format
+        text content
+        integer sequence_number
+    }
+
+    SUPPORTING_RESOURCES {
+        uuid id PK
+        uuid book_id FK
+        string content_type
+        string resource_mode
+        string content_audience
+        string caption
+        string resource_format
+        string file_format
+        integer width
+        integer height
+        string resource_url
+        date valid_from
+        date valid_until
+    }
+
+    BOOK_IDENTIFIERS {
+        uuid id PK
+        uuid book_id FK
+        string identifier_type
+        string scheme_name
+        string identifier_value
+        boolean is_primary
+    }
+
+    SERIES {
+        uuid id PK
+        string collection_type
+        string collection_title
+        string collection_identifier_type
+        string collection_identifier_scheme
+        string collection_identifier
+    }
+
+    BOOK_SERIES {
+        uuid id PK
+        uuid book_id FK
+        uuid series_id FK
+        integer sequence_number
+    }
+
+    WORKS {
+        uuid id PK
+        string title
+        string original_language
+        string work_identifier_type
+        string work_identifier_scheme
+        string work_identifier
+    }
+
+    BOOK_WORKS {
+        uuid id PK
+        uuid book_id FK
+        uuid work_id FK
+        string work_relation_code
+    }
+
+    RELATED_PRODUCTS {
+        uuid id PK
+        uuid book_id FK
+        uuid related_book_id FK
+        string relation_code
+        string identifier_type
+        string identifier_value
+        string product_form
+    }
+
+    BOOK_SUPPLIES {
+        uuid id PK
+        uuid book_id FK
+        uuid supplier_organization_id FK
+        string supplier_role
+        string market_status
+        string availability
+        date expected_ship_date
+        integer order_time_days
+    }
+
+    PRICES {
+        uuid id PK
+        uuid book_supply_id FK
+        string price_type
+        decimal amount
+        string currency_code
+        date valid_from
+        date valid_until
+        string tax_type
+        decimal tax_rate
+        decimal tax_amount
+        boolean tax_included
+    }
+
+    PRICE_TERRITORIES {
+        uuid id PK
+        uuid price_id FK
+        string territory_type
+        string territory_code
+        boolean included
+    }
