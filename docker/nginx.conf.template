@@ -1,0 +1,46 @@
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+error_log /dev/stderr warn;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format railway '$remote_addr - $remote_user [$time_local] "$request" '
+                       '$status $body_bytes_sent "$http_referer" "$http_user_agent"';
+    access_log /dev/stdout railway;
+
+    sendfile on;
+    keepalive_timeout 65;
+    client_max_body_size 40m;
+
+    server {
+        listen __PORT__;
+        server_name _;
+        root /srv/pim/public;
+        index index.php;
+
+        location / {
+            try_files $uri /index.php$is_args$args;
+        }
+
+        location = /index.php {
+            include fastcgi_params;
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_read_timeout 300;
+            fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+            fastcgi_param DOCUMENT_ROOT $document_root;
+            fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+            fastcgi_param APP_ENV prod;
+        }
+
+        location ~ \.php$ {
+            return 404;
+        }
+    }
+}

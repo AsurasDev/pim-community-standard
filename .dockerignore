@@ -1,0 +1,13 @@
+.git
+.github
+.railway
+.DS_Store
+node_modules
+vendor
+var
+public/bundles
+public/css
+public/dist
+public/js
+npm-debug.log
+yarn-error.log

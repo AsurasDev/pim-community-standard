@@ -60,3 +60,50 @@ https://docs.akeneo.com/master/migrate_pim/index.html
 Changelog
 ---------
 You can check out the changelog files in https://github.com/akeneo/pim-community-dev.
+
+Railway deployment
+------------------
+
+This fork contains a production-oriented, single-container runtime for Railway.
+It builds the Akeneo 2026.3 backend and frontend, serves the application with
+Nginx and PHP-FPM, and runs the Symfony Messenger worker under Supervisor.
+
+The Railway project needs three services:
+
+* this repository as the `akeneo` service, with a persistent volume mounted at
+  `/srv/pim/var`;
+* MySQL `8.0.34`, with a volume mounted at `/var/lib/mysql`;
+* Elasticsearch `8.17.0`, with a volume mounted at
+  `/usr/share/elasticsearch/data` and `node.store.allow_mmap=false`.
+
+The application entrypoint waits for both dependencies and only runs the
+destructive Akeneo installer when its completed-install marker is absent.
+Subsequent deployments preserve the database and uploaded files.
+
+Akeneo 2026.3's generic `pim:install` command defaults to a fixture path that
+does not exist in the Standard distribution. The runtime therefore follows
+the production target from Akeneo's own `std-build/Makefile` and passes the
+packaged `minimal` catalog explicitly to `pim:installer:db`.
+
+Railway mounts volumes as root. Elasticsearch must run with
+`RAILWAY_RUN_UID=0` and a start command that fixes ownership before dropping
+privileges again:
+
+```bash
+bash -lc 'chown -R elasticsearch:root /usr/share/elasticsearch/data && exec runuser -u elasticsearch -- /usr/local/bin/docker-entrypoint.sh eswrapper'
+```
+
+The runtime also disables PHP-FPM's `clear_env` setting. Without that change,
+CLI installation commands see Railway's variables but web requests fall back
+to the distribution's `.env` hosts (`mysql` and `elasticsearch`).
+
+## Integración ONIX → Akeneo → Medusa
+
+El catálogo ONIX en Directus, sus migraciones y el servicio que sincroniza hacia
+este PIM viven ahora en repositorios propios:
+
+- **[AsurasDev/onix-directus](https://github.com/AsurasDev/onix-directus)** — modelo ONIX, migraciones y sincronizadores
+- **[AsurasDev/onix-n8n](https://github.com/AsurasDev/onix-n8n)** — orquestación
+- **[AsurasDev/libreria-onix](https://github.com/AsurasDev/libreria-onix)** — mapa del sistema completo
+
+Estuvieron en `directus-onix/` dentro de este fork hasta el commit `535f426`.
