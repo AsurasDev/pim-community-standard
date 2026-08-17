@@ -96,3 +96,14 @@ bash -lc 'chown -R elasticsearch:root /usr/share/elasticsearch/data && exec runu
 The runtime also disables PHP-FPM's `clear_env` setting. Without that change,
 CLI installation commands see Railway's variables but web requests fall back
 to the distribution's `.env` hosts (`mysql` and `elasticsearch`).
+
+## Integración ONIX → Akeneo → Medusa
+
+El catálogo ONIX en Directus, sus migraciones y el servicio que sincroniza hacia
+este PIM viven ahora en repositorios propios:
+
+- **[AsurasDev/onix-directus](https://github.com/AsurasDev/onix-directus)** — modelo ONIX, migraciones y sincronizadores
+- **[AsurasDev/onix-n8n](https://github.com/AsurasDev/onix-n8n)** — orquestación
+- **[AsurasDev/libreria-onix](https://github.com/AsurasDev/libreria-onix)** — mapa del sistema completo
+
+Estuvieron en `directus-onix/` dentro de este fork hasta el commit `535f426`.
