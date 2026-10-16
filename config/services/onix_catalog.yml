@@ -1,0 +1,8 @@
+services:
+    onix.catalog.command.retire_attributes:
+        class: Onix\Catalog\Command\RetireAttributesCommand
+        arguments:
+            - '@pim_catalog.repository.attribute'
+            - '@pim_catalog.remover.attribute'
+        tags:
+            - { name: console.command }

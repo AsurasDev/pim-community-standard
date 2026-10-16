@@ -1,0 +1,51 @@
+name: Literaria quality
+'on':
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: literaria-quality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality-gate:
+    name: quality-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      # A public repository cannot call a private reusable workflow.
+      - name: Checkout private quality infrastructure
+        uses: actions/checkout@v4
+        with:
+          repository: AsurasDev/libreria-onix
+          ref: main
+          submodules: recursive
+          fetch-depth: 0
+          token: ${{ secrets.SUBMODULES_READ_TOKEN }}
+          persist-credentials: false
+      - name: Checkout Akeneo under review
+        uses: actions/checkout@v4
+        with:
+          path: akeneo-pim
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Mandatory fast suite
+        env:
+          QUALITY_QEMU_MIGRATION: '0'
+        run: make qa-ci
+      - name: Catalog integration
+        env:
+          QUALITY_QEMU_MIGRATION: '0'
+        run: make qa QA_PATH=catalog
+      - name: Publish reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: .local-quality/reports
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Cleanup isolated services
+        if: always()
+        run: make qa-down

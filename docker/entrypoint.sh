@@ -111,6 +111,12 @@ else
     echo "Completed Akeneo installation detected; skipping destructive installation."
 fi
 
+if [ "${ONIX_RETIRE_LEGACY_ATTRIBUTES:-true}" = "true" ]; then
+    echo "Retiring legacy ONIX media and biography attributes..."
+    su -s /bin/sh www-data -c \
+        "APP_ENV=prod php bin/console onix:catalog:retire-attributes --no-interaction --env=prod"
+fi
+
 su -s /bin/sh www-data -c \
     "APP_ENV=prod php bin/console cache:warmup --no-debug --env=prod"
 

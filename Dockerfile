@@ -55,7 +55,12 @@ ENV APP_ENV=prod \
     PHP_CONF_MAX_EXECUTION_TIME=300 \
     XDEBUG_MODE=off
 
-RUN apt-get update \
+# Bullseye security artifacts moved off the live mirror in September 2026.
+# Keep signed repository metadata and pin the final supported snapshot.
+RUN sed -i 's|http://deb.debian.org/debian-security|https://snapshot.debian.org/archive/debian-security/20260831T235959Z|g; s|http://deb.debian.org/debian|https://snapshot.debian.org/archive/debian/20260831T235959Z|g' /etc/apt/sources.list \
+    && printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snapshot \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get -o Acquire::http::No-Cache=true update \
     && apt-get install --yes --no-install-recommends nginx supervisor \
     && sed -i 's/^;clear_env = no$/clear_env = no/' /etc/php/8.3/fpm/pool.d/www.conf \
     && apt-get clean \
